@@ -67,7 +67,7 @@ class Polymarket(callbacks.Plugin):
         matching_event = None
         for event in data['events']:
             self.log.debug(f"Checking event: {event['slug']}")
-            if event['slug'] == slug:
+            if event['slug'] == slug.replace(' ', '-'):
                 matching_event = event
                 break
 
