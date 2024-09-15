@@ -14,7 +14,7 @@ warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 class Polymarket(callbacks.Plugin):
     """Fetches and displays odds from Polymarket"""
 
-    def _parse_polymarket_event(self, query, is_url=True, max_responses=5):
+    def _parse_polymarket_event(self, query, is_url=True, max_responses=7):
         if is_url:
             parsed_url = urlparse(query)
             path_parts = parsed_url.path.split('/')
