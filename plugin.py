@@ -14,30 +14,14 @@ warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 class Polymarket(callbacks.Plugin):
     """Fetches and displays odds from Polymarket"""
 
-    def polymarket(self, irc, msg, args, url):
-        """<url>
-        
-        Fetches and displays the current odds from a Polymarket URL.
-        """
-        try:
-            result = self._parse_polymarket_event(url, max_responses=5)
-            if result['data']:
-                filtered_data = [item for item in result['data'] if item[1] >= 0.01][:5]  # Limit to 5 entries
-                
-                output = f"\x02{result['title']}\x02: "
-                output += " | ".join([f"{outcome}: \x02{probability:.1%}\x02" for outcome, probability in filtered_data])
-                irc.reply(output, prefixNick=False)
-            else:
-                irc.reply("Unable to fetch odds or no valid data found.")
-        except Exception as e:
-            irc.reply(f"An error occurred: {str(e)}")
+    def _parse_polymarket_event(self, query, is_url=True, max_responses=5):
+        if is_url:
+            parsed_url = urlparse(query)
+            path_parts = parsed_url.path.split('/')
+            slug = ' '.join(path_parts[-1].split('-'))
+        else:
+            slug = query
 
-    polymarket = wrap(polymarket, ['url'])
-
-    def _parse_polymarket_event(self, url, max_responses=8):
-        parsed_url = urlparse(url)
-        path_parts = parsed_url.path.split('/')
-        slug = ' '.join(path_parts[-1].split('-'))
         encoded_slug = quote(slug)
         api_url = f"https://polymarket.com/api/events/global?q={encoded_slug}"
         
@@ -48,7 +32,10 @@ class Polymarket(callbacks.Plugin):
         if not data['events']:
             return {'title': "No matching event found", 'data': []}
 
-        matching_event = next((event for event in data['events'] if event['slug'] == slug.replace(' ', '-')), None)
+        if is_url:
+            matching_event = next((event for event in data['events'] if event['slug'] == slug.replace(' ', '-')), None)
+        else:
+            matching_event = data['events'][0] if data['events'] else None
 
         if not matching_event:
             return {'title': "No matching event found", 'data': []}
@@ -63,7 +50,7 @@ class Polymarket(callbacks.Plugin):
                 probability = float(market['lastTradePrice'])
             except (KeyError, ValueError):
                 probability = 0.0
-        
+            
             cleaned_data.append((outcome, probability))
 
         cleaned_data.sort(key=lambda x: x[1], reverse=True)
@@ -72,6 +59,29 @@ class Polymarket(callbacks.Plugin):
             'title': title,
             'data': cleaned_data[:max_responses]
         }
+
+    def polymarket(self, irc, msg, args, query):
+        """<query>
+        
+        Fetches and displays the current odds from Polymarket. 
+        If <query> is a URL, it fetches odds for that specific market.
+        If <query> is a search string, it searches for matching markets and displays the top result.
+        """
+        try:
+            is_url = query.startswith('http://') or query.startswith('https://')
+            result = self._parse_polymarket_event(query, is_url=is_url)
+            if result['data']:
+                filtered_data = [item for item in result['data'] if item[1] >= 0.01][:5]  # Limit to 5 entries
+                
+                output = f"\x02{result['title']}\x02: "
+                output += " | ".join([f"{outcome}: \x02{probability:.1%}\x02" for outcome, probability in filtered_data])
+                irc.reply(output, prefixNick=False)
+            else:
+                irc.reply("Unable to fetch odds or no valid data found.")
+        except Exception as e:
+            irc.reply(f"An error occurred: {str(e)}")
+
+    polymarket = wrap(polymarket, ['text'])
 
 Class = Polymarket
 
