@@ -14,7 +14,19 @@ warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 class Polymarket(callbacks.Plugin):
     """Fetches and displays odds from Polymarket"""
 
-    def _parse_polymarket_event(self, query, is_url=True, max_responses=7):
+    def _parse_polymarket_event(self, query, is_url=True, max_responses=5):
+        """
+        Parse Polymarket event data from API response.
+        
+        Args:
+            query (str): URL or search string
+            is_url (bool): True if query is a URL, False if it's a search string
+            max_responses (int): Maximum number of outcomes to return
+
+        Returns:
+            dict: Parsed event data with title and outcomes
+        """
+        # Prepare API query
         if is_url:
             parsed_url = urlparse(query)
             path_parts = parsed_url.path.split('/')
@@ -25,6 +37,7 @@ class Polymarket(callbacks.Plugin):
         encoded_slug = quote(slug)
         api_url = f"https://polymarket.com/api/events/global?q={encoded_slug}"
         
+        # Fetch data from API
         response = requests.get(api_url, verify=False)
         response.raise_for_status()
         data = response.json()
@@ -32,6 +45,7 @@ class Polymarket(callbacks.Plugin):
         if not data['events']:
             return {'title': "No matching event found", 'data': []}
 
+        # Find matching event
         if is_url:
             matching_event = next((event for event in data['events'] if event['slug'] == slug.replace(' ', '-')), None)
         else:
@@ -43,6 +57,7 @@ class Polymarket(callbacks.Plugin):
         title = matching_event['title']
         markets = matching_event['markets']
 
+        # Parse market data
         cleaned_data = []
         for market in markets:
             outcome = market['groupItemTitle']
@@ -64,6 +79,7 @@ class Polymarket(callbacks.Plugin):
                 # If there's any error in parsing, skip this market
                 continue
 
+        # Sort outcomes by probability and limit to max_responses
         cleaned_data.sort(key=lambda x: x[1], reverse=True)
         
         return {
@@ -82,8 +98,10 @@ class Polymarket(callbacks.Plugin):
             is_url = query.startswith('http://') or query.startswith('https://')
             result = self._parse_polymarket_event(query, is_url=is_url)
             if result['data']:
-                filtered_data = [item for item in result['data'] if item[1] >= 0.01][:7]  # Limit to 5 entries
+                # Filter outcomes with at least 1% probability and limit to 5 entries
+                filtered_data = [item for item in result['data'] if item[1] >= 0.01][:5]
                 
+                # Format output
                 output = f"\x02{result['title']}\x02: "
                 output += " | ".join([f"{outcome}: \x02{probability:.1%}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02" for outcome, probability, display_outcome in filtered_data])
                 irc.reply(output, prefixNick=False)
