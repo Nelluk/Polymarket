@@ -113,7 +113,7 @@ class Polymarket(callbacks.Plugin):
                 # Format output
                 output = f"\x02{result['title']}\x02: "
                 output += " | ".join([f"{outcome}: \x02{probability:.1%}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02" for outcome, probability, display_outcome in filtered_data])
-                irc.reply(output[:510], prefixNick=False)
+                irc.reply(output, prefixNick=False)
             else:
                 irc.reply("Unable to fetch odds or no valid data found.")
         except Exception as e:
