@@ -9,7 +9,6 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from webdriver_manager.chrome import ChromeDriverManager
 import os
 
 class Polymarket(callbacks.Plugin):
@@ -34,15 +33,14 @@ class Polymarket(callbacks.Plugin):
     polymarket = wrap(polymarket, ['url'])
 
     def _parse_polymarket_event(self, url, max_responses=4):
-        # Set the path for ChromeDriver
-        os.environ['WDM_LOCAL'] = '/tmp'
-        service = Service(ChromeDriverManager().install())
         options = Options()
         options.add_argument('--headless')
         options.add_argument('--disable-gpu')
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
-        driver = webdriver.Chrome(service=service, options=options)
+        
+        # Assume ChromeDriver is in the system PATH
+        driver = webdriver.Chrome(options=options)
 
         try:
             driver.get(url)
