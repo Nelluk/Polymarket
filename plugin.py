@@ -6,6 +6,10 @@ import supybot.callbacks as callbacks
 import requests
 import json
 from urllib.parse import urlparse
+import warnings
+
+# Suppress InsecureRequestWarning
+warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 
 class Polymarket(callbacks.Plugin):
     """Fetches and displays odds from Polymarket"""
@@ -36,7 +40,7 @@ class Polymarket(callbacks.Plugin):
 
         # Make API request
         api_url = f"https://polymarket.com/api/events/global?q={slug}"
-        response = requests.get(api_url)
+        response = requests.get(api_url, verify=False)  # Disable SSL verification
         response.raise_for_status()
         data = response.json()
 
