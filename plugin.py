@@ -88,20 +88,13 @@ class Polymarket(callbacks.Plugin):
             outcome = market['groupItemTitle']
             self.log.debug(f"Processing market: {outcome}")
             try:
-                # Try to parse outcomePrices as JSON
-                outcome_prices = json.loads(market['outcomePrices'])
-                probability = float(outcome_prices[0]) if outcome_prices else 0.0
-                self.log.debug(f"Parsed outcomePrices as JSON. Probability: {probability}")
-            except json.JSONDecodeError:
-                # If JSON parsing fails, try to evaluate it as a Python list
-                try:
-                    outcome_prices = eval(market['outcomePrices'])
-                    probability = float(outcome_prices[0]) if outcome_prices else 0.0
-                    self.log.debug(f"Parsed outcomePrices as Python list. Probability: {probability}")
-                except:
-                    # If all else fails, set probability to 0
-                    probability = 0.0
-                    self.log.debug(f"Failed to parse outcomePrices. Setting probability to 0")
+                # Use lastTradePrice for the probability
+                probability = float(market['lastTradePrice'])
+                self.log.debug(f"Using lastTradePrice. Probability: {probability}")
+            except (KeyError, ValueError):
+                # If lastTradePrice is not available or not a valid float, set probability to 0
+                probability = 0.0
+                self.log.debug(f"Failed to get lastTradePrice. Setting probability to 0")
             
             cleaned_data.append((outcome, probability))
 
