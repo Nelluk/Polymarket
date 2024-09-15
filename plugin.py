@@ -11,7 +11,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 import os
-from webdriver_manager.core.utils import ChromeType
 
 class Polymarket(callbacks.Plugin):
     """Fetches and displays odds from Polymarket"""
