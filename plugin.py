@@ -47,11 +47,22 @@ class Polymarket(callbacks.Plugin):
         for market in markets:
             outcome = market['groupItemTitle']
             try:
-                probability = float(market['lastTradePrice'])
-            except (KeyError, ValueError):
-                probability = 0.0
-            
-            cleaned_data.append((outcome, probability))
+                outcomes = json.loads(market['outcomes'])
+                outcome_prices = json.loads(market['outcomePrices'])
+                
+                if 'Yes' in outcomes:
+                    yes_index = outcomes.index('Yes')
+                    probability = float(outcome_prices[yes_index])
+                    display_outcome = 'Yes'
+                else:
+                    max_price_index = outcome_prices.index(max(outcome_prices))
+                    probability = float(outcome_prices[max_price_index])
+                    display_outcome = outcomes[max_price_index]
+                
+                cleaned_data.append((outcome, probability, display_outcome))
+            except (KeyError, ValueError, json.JSONDecodeError):
+                # If there's any error in parsing, skip this market
+                continue
 
         cleaned_data.sort(key=lambda x: x[1], reverse=True)
         
@@ -74,7 +85,7 @@ class Polymarket(callbacks.Plugin):
                 filtered_data = [item for item in result['data'] if item[1] >= 0.01][:5]  # Limit to 5 entries
                 
                 output = f"\x02{result['title']}\x02: "
-                output += " | ".join([f"{outcome}: \x02{probability:.1%}\x02" for outcome, probability in filtered_data])
+                output += " | ".join([f"{outcome}: \x02{probability:.1%}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02" for outcome, probability, display_outcome in filtered_data])
                 irc.reply(output, prefixNick=False)
             else:
                 irc.reply("Unable to fetch odds or no valid data found.")
