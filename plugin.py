@@ -62,7 +62,19 @@ class Polymarket(callbacks.Plugin):
         cleaned_data = []
         for market in sorted_markets:
             outcome = market['groupItemTitle']
-            probability = float(market['outcomePrices'][0])  # Assuming 'Yes' price is always first
+            try:
+                # Try to parse outcomePrices as JSON
+                outcome_prices = json.loads(market['outcomePrices'])
+                probability = float(outcome_prices[0]) if outcome_prices else 0.0
+            except json.JSONDecodeError:
+                # If JSON parsing fails, try to evaluate it as a Python list
+                try:
+                    outcome_prices = eval(market['outcomePrices'])
+                    probability = float(outcome_prices[0]) if outcome_prices else 0.0
+                except:
+                    # If all else fails, set probability to 0
+                    probability = 0.0
+            
             cleaned_data.append((outcome, probability))
 
         return {
