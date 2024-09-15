@@ -22,9 +22,14 @@ class Polymarket(callbacks.Plugin):
         try:
             result = self._parse_polymarket_event(url)
             if result['data']:
-                irc.reply(f"Market: {result['title']}")
-                for outcome, probability in result['data']:
-                    irc.reply(f"{outcome}: {probability:.2%}")
+                # Filter outcomes with at least 1% probability and take top 4
+                filtered_data = [item for item in result['data'] if item[1] >= 0.01][:4]
+                
+                # Format the output
+                outcomes = ' | '.join([f"{outcome}: {probability:.1%}" for outcome, probability in filtered_data])
+                output = f"Market: {result['title']} | {outcomes}"
+                
+                irc.reply(output)
             else:
                 irc.reply("Unable to fetch odds or no valid data found.")
         except Exception as e:
@@ -57,9 +62,7 @@ class Polymarket(callbacks.Plugin):
         cleaned_data = []
         for market in sorted_markets:
             outcome = market['groupItemTitle']
-            # Parse the outcomePrices as a list and get the first element
-            outcome_prices = json.loads(market['outcomePrices'])
-            probability = float(outcome_prices[0]) if outcome_prices else 0.0
+            probability = float(market['outcomePrices'][0])  # Assuming 'Yes' price is always first
             cleaned_data.append((outcome, probability))
 
         return {
