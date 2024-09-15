@@ -57,7 +57,9 @@ class Polymarket(callbacks.Plugin):
         cleaned_data = []
         for market in sorted_markets:
             outcome = market['groupItemTitle']
-            probability = float(market['outcomePrices'][0])  # Assuming 'Yes' price is always first
+            # Parse the outcomePrices as a list and get the first element
+            outcome_prices = json.loads(market['outcomePrices'])
+            probability = float(outcome_prices[0]) if outcome_prices else 0.0
             cleaned_data.append((outcome, probability))
 
         return {
