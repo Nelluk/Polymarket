@@ -114,7 +114,6 @@ class Polymarket(callbacks.Plugin):
             is_url = query.startswith('http://') or query.startswith('https://')
             result = self._parse_polymarket_event(query, is_url=is_url)
             if result['data']:
-                # Remove the filter for outcomes with at least 1% probability
                 filtered_data = result['data'][:20]
                 
                 # Format output
@@ -123,7 +122,8 @@ class Polymarket(callbacks.Plugin):
                 
                 log.debug(f"Polymarket: Sending IRC reply: {output}")
                 
-                irc.reply(output, prefixNick=False)
+                # Use private=True to trigger Limnoria's message splitting
+                irc.reply(output, prefixNick=False, private=True)
             else:
                 irc.reply("Unable to fetch odds or no valid data found.")
         except Exception as e:
