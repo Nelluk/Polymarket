@@ -10,6 +10,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
+import os
+from webdriver_manager.core.utils import ChromeType
 
 class Polymarket(callbacks.Plugin):
     """Fetches and displays odds from Polymarket"""
@@ -33,7 +35,9 @@ class Polymarket(callbacks.Plugin):
     polymarket = wrap(polymarket, ['url'])
 
     def _parse_polymarket_event(self, url, max_responses=4):
-        service = Service(ChromeDriverManager().install())
+        # Use a writable directory for ChromeDriver
+        driver_path = ChromeDriverManager(path="/tmp").install()
+        service = Service(driver_path)
         options = Options()
         options.add_argument('--headless')
         options.add_argument('--disable-gpu')
