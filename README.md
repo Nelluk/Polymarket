@@ -57,7 +57,7 @@ Where `<query>` can be either a Polymarket URL or a search term.
 
 ## Notes
 
-- The plugin will display up to 5 outcomes for each query, sorted by probability.
+- The plugin will display up to 7 outcomes for each query, sorted by probability.
 - Only outcomes with at least 1% probability are shown.
 - For markets with custom outcomes (not Yes/No), the outcome name is displayed in parentheses.
 
