@@ -65,7 +65,7 @@ class Polymarket(callbacks.Plugin):
                 outcomes = json.loads(market['outcomes'])
                 outcome_prices = json.loads(market['outcomePrices'])
                 
-                if 'Yes' in outcomes and 'No' in outcomes:
+                if len(outcomes) == 2 and 'Yes' in outcomes and 'No' in outcomes:
                     yes_index = outcomes.index('Yes')
                     no_index = outcomes.index('No')
                     yes_probability = float(outcome_prices[yes_index])
@@ -75,11 +75,12 @@ class Polymarket(callbacks.Plugin):
                     if len(markets) == 1 and yes_probability <= 0.01 and no_probability > 0.99:
                         cleaned_data.append((outcome, yes_probability, 'Yes'))
                     else:
-                        probability = max(yes_probability, no_probability)
-                        display_outcome = 'Yes' if probability == yes_probability else 'No'
+                        probability = yes_probability
+                        display_outcome = 'Yes'
                         cleaned_data.append((outcome, probability, display_outcome))
                 else:
-                    max_price_index = outcome_prices.index(max(outcome_prices))
+                    # For multi-outcome markets, always use the highest probability
+                    max_price_index = outcome_prices.index(max(outcome_prices, key=float))
                     probability = float(outcome_prices[max_price_index])
                     display_outcome = outcomes[max_price_index]
                     cleaned_data.append((outcome, probability, display_outcome))
@@ -92,7 +93,7 @@ class Polymarket(callbacks.Plugin):
         
         return {
             'title': title,
-            'data': [item for item in cleaned_data if item[1] >= 0.01 or len(cleaned_data) == 1]
+            'data': [item for item in cleaned_data if item[1] >= 0.01 or len(cleaned_data) == 1][:max_responses]
         }
 
     def polymarket(self, irc, msg, args, query):
