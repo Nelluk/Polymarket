@@ -71,8 +71,8 @@ class Polymarket(callbacks.Plugin):
                     yes_probability = float(outcome_prices[yes_index])
                     no_probability = float(outcome_prices[no_index])
                     
-                    # Handle the edge case for Yes/No markets
-                    if yes_probability <= 0.01 and no_probability > 0.99:
+                    # Handle the edge case for Yes/No markets only if it's the only market
+                    if len(markets) == 1 and yes_probability <= 0.01 and no_probability > 0.99:
                         cleaned_data.append((outcome, yes_probability, 'Yes'))
                     else:
                         probability = max(yes_probability, no_probability)
@@ -92,7 +92,7 @@ class Polymarket(callbacks.Plugin):
         
         return {
             'title': title,
-            'data': cleaned_data[:max_responses]
+            'data': [item for item in cleaned_data if item[1] >= 0.01 or len(cleaned_data) == 1]
         }
 
     def polymarket(self, irc, msg, args, query):
