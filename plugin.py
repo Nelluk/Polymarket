@@ -82,7 +82,7 @@ class Polymarket(callbacks.Plugin):
             is_url = query.startswith('http://') or query.startswith('https://')
             result = self._parse_polymarket_event(query, is_url=is_url)
             if result['data']:
-                filtered_data = [item for item in result['data'] if item[1] >= 0.01][:5]  # Limit to 5 entries
+                filtered_data = [item for item in result['data'] if item[1] >= 0.01][:7]  # Limit to 5 entries
                 
                 output = f"\x02{result['title']}\x02: "
                 output += " | ".join([f"{outcome}: \x02{probability:.1%}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02" for outcome, probability, display_outcome in filtered_data])
