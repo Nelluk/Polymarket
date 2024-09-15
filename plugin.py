@@ -43,12 +43,16 @@ class Polymarket(callbacks.Plugin):
         # Extract the slug from the URL
         parsed_url = urlparse(url)
         path_parts = parsed_url.path.split('/')
-        slug = ' '.join(path_parts[-1].split('-'))
+        slug = '-'.join(path_parts[-1].split('-'))  # Keep hyphens
         self.log.debug(f"Extracted slug: {slug}")
 
         # Make API request
         api_url = f"https://polymarket.com/api/events/global?q={slug}"
         self.log.debug(f"Making API request to: {api_url}")
+        
+        # New debug line to show the exact API endpoint
+        self.log.debug(f"Full API endpoint: {requests.utils.quote(api_url)}")
+        
         response = requests.get(api_url, verify=False)  # Disable SSL verification
         response.raise_for_status()
         data = response.json()
