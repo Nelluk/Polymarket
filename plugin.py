@@ -3,13 +3,9 @@ from supybot.commands import *
 import supybot.plugins as plugins
 import supybot.ircutils as ircutils
 import supybot.callbacks as callbacks
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-import os
+import requests
+import json
+from urllib.parse import urlparse
 
 class Polymarket(callbacks.Plugin):
     """Fetches and displays odds from Polymarket"""
@@ -33,56 +29,37 @@ class Polymarket(callbacks.Plugin):
     polymarket = wrap(polymarket, ['url'])
 
     def _parse_polymarket_event(self, url, max_responses=4):
-        options = Options()
-        options.add_argument('--headless')
-        options.add_argument('--disable-gpu')
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-dev-shm-usage')
-        
-        # Assume ChromeDriver is in the system PATH
-        driver = webdriver.Chrome(options=options)
+        # Extract the slug from the URL
+        parsed_url = urlparse(url)
+        path_parts = parsed_url.path.split('/')
+        slug = ' '.join(path_parts[-1].split('-'))
 
-        try:
-            driver.get(url)
-            WebDriverWait(driver, 30).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "*:not(script):not(style)"))
-            )
+        # Make API request
+        api_url = f"https://polymarket.com/api/events/global?q={slug}"
+        response = requests.get(api_url)
+        response.raise_for_status()
+        data = response.json()
 
-            title = driver.title
+        if not data['events']:
+            return {'title': "No matching event found", 'data': []}
 
-            script = """
-            return Array.from(document.querySelectorAll('*')).filter(el => el.textContent.includes('%'))
-                .map(el => el.textContent.trim())
-                .filter(text => text.match(/^[\\w\\s,+\\-%]+\\$[\\d,]+\\s+Bet\\d+(?:\\.\\d+)?%/))
-                .map(text => {
-                    let [outcome, rest] = text.split(/\\$(?=\\d)/);
-                    let percentage = rest.match(/Bet(\\d+(?:\\.\\d+)?)%/)[1];
-                    return [outcome.trim(), parseFloat(percentage) / 100];
-                });
-            """
-            
-            data = driver.execute_script(script)
+        event = data['events'][0]
+        title = event['title']
+        markets = event['markets']
 
-            cleaned_data = sorted(
-                {k: v for k, v in dict(data).items() if v > 0.01}.items(),
-                key=lambda x: x[1],
-                reverse=True
-            )[:max_responses]
+        # Sort markets by liquidity and get top max_responses
+        sorted_markets = sorted(markets, key=lambda x: float(x['liquidity']), reverse=True)[:max_responses]
 
-            return {
-                'title': title,
-                'data': cleaned_data
-            }
+        cleaned_data = []
+        for market in sorted_markets:
+            outcome = market['groupItemTitle']
+            probability = float(market['outcomePrices'][0])  # Assuming 'Yes' price is always first
+            cleaned_data.append((outcome, probability))
 
-        except Exception as e:
-            print(f"An error occurred: {e}")
-            return {
-                'title': title if 'title' in locals() else "Title not found",
-                'data': []
-            }
-
-        finally:
-            driver.quit()
+        return {
+            'title': title,
+            'data': cleaned_data
+        }
 
 Class = Polymarket
 
