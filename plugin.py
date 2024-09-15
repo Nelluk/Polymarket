@@ -52,9 +52,18 @@ class Polymarket(callbacks.Plugin):
         if not data['events']:
             return {'title': "No matching event found", 'data': []}
 
-        event = data['events'][0]
-        title = event['title']
-        markets = event['markets']
+        # Find the event that matches our slug
+        matching_event = None
+        for event in data['events']:
+            if event['slug'] == slug:
+                matching_event = event
+                break
+
+        if not matching_event:
+            return {'title': "No matching event found", 'data': []}
+
+        title = matching_event['title']
+        markets = matching_event['markets']
 
         # Sort markets by liquidity and get top max_responses
         sorted_markets = sorted(markets, key=lambda x: float(x['liquidity']), reverse=True)[:max_responses]
