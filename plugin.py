@@ -5,7 +5,7 @@ import supybot.ircutils as ircutils
 import supybot.callbacks as callbacks
 import requests
 import json
-from urllib.parse import urlparse
+from urllib.parse import urlparse, quote
 import warnings
 
 # Suppress InsecureRequestWarning
@@ -43,15 +43,16 @@ class Polymarket(callbacks.Plugin):
         # Extract the slug from the URL
         parsed_url = urlparse(url)
         path_parts = parsed_url.path.split('/')
-        slug = '-'.join(path_parts[-1].split('-'))  # Keep hyphens
+        slug = ' '.join(path_parts[-1].split('-'))  # Replace hyphens with spaces
         self.log.debug(f"Extracted slug: {slug}")
 
-        # Make API request
-        api_url = f"https://polymarket.com/api/events/global?q={slug}"
+        # Encode the slug for the API request
+        encoded_slug = quote(slug)
+        api_url = f"https://polymarket.com/api/events/global?q={encoded_slug}"
         self.log.debug(f"Making API request to: {api_url}")
         
         # New debug line to show the exact API endpoint
-        self.log.debug(f"Full API endpoint: {requests.utils.quote(api_url)}")
+        self.log.debug(f"Full API endpoint: {api_url}")
         
         response = requests.get(api_url, verify=False)  # Disable SSL verification
         response.raise_for_status()
