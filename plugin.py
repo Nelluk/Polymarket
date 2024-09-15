@@ -79,6 +79,11 @@ class Polymarket(callbacks.Plugin):
         markets = matching_event['markets']
         self.log.debug(f"Matching event found. Title: {title}, Number of markets: {len(markets)}")
 
+        # Debug: Print raw market data
+        self.log.debug("Raw market data:")
+        for market in markets:
+            self.log.debug(json.dumps(market, indent=2))
+
         # Sort markets by liquidity and get top max_responses
         sorted_markets = sorted(markets, key=lambda x: float(x['liquidity']), reverse=True)[:max_responses]
         self.log.debug(f"Sorted markets. Number of markets after sorting: {len(sorted_markets)}")
@@ -87,6 +92,7 @@ class Polymarket(callbacks.Plugin):
         for market in sorted_markets:
             outcome = market['groupItemTitle']
             self.log.debug(f"Processing market: {outcome}")
+            self.log.debug(f"Raw market data: {json.dumps(market, indent=2)}")
             try:
                 # Use lastTradePrice for the probability
                 probability = float(market['lastTradePrice'])
