@@ -65,16 +65,24 @@ class Polymarket(callbacks.Plugin):
                 outcomes = json.loads(market['outcomes'])
                 outcome_prices = json.loads(market['outcomePrices'])
                 
-                if 'Yes' in outcomes:
+                if 'Yes' in outcomes and 'No' in outcomes:
                     yes_index = outcomes.index('Yes')
-                    probability = float(outcome_prices[yes_index])
-                    display_outcome = 'Yes'
+                    no_index = outcomes.index('No')
+                    yes_probability = float(outcome_prices[yes_index])
+                    no_probability = float(outcome_prices[no_index])
+                    
+                    # Handle the edge case for Yes/No markets
+                    if yes_probability <= 0.01 and no_probability > 0.99:
+                        cleaned_data.append((outcome, yes_probability, 'Yes'))
+                    else:
+                        probability = max(yes_probability, no_probability)
+                        display_outcome = 'Yes' if probability == yes_probability else 'No'
+                        cleaned_data.append((outcome, probability, display_outcome))
                 else:
                     max_price_index = outcome_prices.index(max(outcome_prices))
                     probability = float(outcome_prices[max_price_index])
                     display_outcome = outcomes[max_price_index]
-                
-                cleaned_data.append((outcome, probability, display_outcome))
+                    cleaned_data.append((outcome, probability, display_outcome))
             except (KeyError, ValueError, json.JSONDecodeError):
                 # If there's any error in parsing, skip this market
                 continue
@@ -98,8 +106,8 @@ class Polymarket(callbacks.Plugin):
             is_url = query.startswith('http://') or query.startswith('https://')
             result = self._parse_polymarket_event(query, is_url=is_url)
             if result['data']:
-                # Filter outcomes with at least 1% probability and limit to 20 entries
-                filtered_data = [item for item in result['data'] if item[1] >= 0.01][:20]
+                # Remove the filter for outcomes with at least 1% probability
+                filtered_data = result['data'][:20]
                 
                 # Format output
                 output = f"\x02{result['title']}\x02: "
