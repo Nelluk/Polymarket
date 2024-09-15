@@ -14,7 +14,7 @@ warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 class Polymarket(callbacks.Plugin):
     """Fetches and displays odds from Polymarket"""
 
-    def _parse_polymarket_event(self, query, is_url=True, max_responses=7):
+    def _parse_polymarket_event(self, query, is_url=True, max_responses=12):
         """
         Parse Polymarket event data from API response.
         
@@ -98,8 +98,8 @@ class Polymarket(callbacks.Plugin):
             is_url = query.startswith('http://') or query.startswith('https://')
             result = self._parse_polymarket_event(query, is_url=is_url)
             if result['data']:
-                # Filter outcomes with at least 1% probability and limit to 7 entries
-                filtered_data = [item for item in result['data'] if item[1] >= 0.01][:7]
+                # Filter outcomes with at least 1% probability and limit to 20 entries
+                filtered_data = [item for item in result['data'] if item[1] >= 0.01][:20]
                 
                 # Format output
                 output = f"\x02{result['title']}\x02: "
