@@ -22,13 +22,11 @@ class Polymarket(callbacks.Plugin):
         try:
             result = self._parse_polymarket_event(url)
             if result['data']:
-                # Filter outcomes with at least 1% probability and take top 4
-                filtered_data = [item for item in result['data'] if item[1] >= 0.01][:4]
+                # Filter outcomes with at least 1% probability
+                filtered_data = [item for item in result['data'] if item[1] >= 0.01]
                 
-                # Format the output
-                outcomes = ' | '.join([f"{outcome}: {probability:.1%}" for outcome, probability in filtered_data])
-                output = f"Market: {result['title']} | {outcomes}"
-                
+                output = f"Market: {result['title']} | "
+                output += " | ".join([f"{outcome}: {probability:.1%}" for outcome, probability in filtered_data])
                 irc.reply(output)
             else:
                 irc.reply("Unable to fetch odds or no valid data found.")
@@ -84,30 +82,28 @@ class Polymarket(callbacks.Plugin):
         for market in markets:
             self.log.debug(json.dumps(market, indent=2))
 
-        # Sort markets by liquidity and get top max_responses
-        sorted_markets = sorted(markets, key=lambda x: float(x['liquidity']), reverse=True)[:max_responses]
-        self.log.debug(f"Sorted markets. Number of markets after sorting: {len(sorted_markets)}")
-
         cleaned_data = []
-        for market in sorted_markets:
+        for market in markets:  # Use all markets, not just sorted_markets
             outcome = market['groupItemTitle']
             self.log.debug(f"Processing market: {outcome}")
             self.log.debug(f"Raw market data: {json.dumps(market, indent=2)}")
             try:
-                # Use lastTradePrice for the probability
                 probability = float(market['lastTradePrice'])
                 self.log.debug(f"Using lastTradePrice. Probability: {probability}")
             except (KeyError, ValueError):
-                # If lastTradePrice is not available or not a valid float, set probability to 0
                 probability = 0.0
                 self.log.debug(f"Failed to get lastTradePrice. Setting probability to 0")
             
             cleaned_data.append((outcome, probability))
 
         self.log.debug(f"Finished processing. Number of cleaned data entries: {len(cleaned_data)}")
+        
+        # Sort cleaned_data by probability in descending order
+        cleaned_data.sort(key=lambda x: x[1], reverse=True)
+        
         return {
             'title': title,
-            'data': cleaned_data
+            'data': cleaned_data[:max_responses]  # Return top max_responses entries
         }
 
 Class = Polymarket
