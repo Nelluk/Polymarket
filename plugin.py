@@ -20,13 +20,12 @@ class Polymarket(callbacks.Plugin):
         Fetches and displays the current odds from a Polymarket URL.
         """
         try:
-            result = self._parse_polymarket_event(url)
+            result = self._parse_polymarket_event(url, max_responses=5)
             if result['data']:
-                # Filter outcomes with at least 1% probability
-                filtered_data = [item for item in result['data'] if item[1] >= 0.01]
+                filtered_data = [item for item in result['data'] if item[1] >= 0.01][:5]  # Limit to 5 entries
                 
-                output = f"\x02Market:\x02 {result['title']}\n"
-                output += "\n".join([f"  \x0303{outcome}:\x03 {probability:.1%}" for outcome, probability in filtered_data])
+                output = f"\x02{result['title']}\x02: "
+                output += " | ".join([f"{outcome}: \x02{probability:.1%}\x02" for outcome, probability in filtered_data])
                 irc.reply(output, prefixNick=False)
             else:
                 irc.reply("Unable to fetch odds or no valid data found.")
