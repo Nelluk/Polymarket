@@ -3,6 +3,7 @@ from supybot.commands import *
 import supybot.plugins as plugins
 import supybot.ircutils as ircutils
 import supybot.callbacks as callbacks
+import supybot.log as log
 import requests
 import json
 from urllib.parse import urlparse, quote
@@ -36,6 +37,8 @@ class Polymarket(callbacks.Plugin):
 
         encoded_slug = quote(slug)
         api_url = f"https://polymarket.com/api/events/global?q={encoded_slug}"
+        
+        log.debug(f"Polymarket: Fetching data from API URL: {api_url}")
         
         # Fetch data from API
         response = requests.get(api_url, verify=False)
@@ -91,10 +94,14 @@ class Polymarket(callbacks.Plugin):
         # Sort outcomes by probability and limit to max_responses
         cleaned_data.sort(key=lambda x: x[1], reverse=True)
         
-        return {
+        result = {
             'title': title,
             'data': [item for item in cleaned_data if item[1] >= 0.01 or len(cleaned_data) == 1][:max_responses]
         }
+        
+        log.debug(f"Polymarket: Parsed event data: {result}")
+        
+        return result
 
     def polymarket(self, irc, msg, args, query):
         """<query>
@@ -113,6 +120,9 @@ class Polymarket(callbacks.Plugin):
                 # Format output
                 output = f"\x02{result['title']}\x02: "
                 output += " | ".join([f"{outcome}: \x02{probability:.1%}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02" for outcome, probability, display_outcome in filtered_data])
+                
+                log.debug(f"Polymarket: Sending IRC reply: {output}")
+                
                 irc.reply(output, prefixNick=False)
             else:
                 irc.reply("Unable to fetch odds or no valid data found.")
