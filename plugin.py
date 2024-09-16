@@ -46,7 +46,7 @@ class Polymarket(callbacks.Plugin):
         response.raise_for_status()
         data = response.json()
 
-        if not data['events']:
+        if not data or 'events' not in data or not data['events']:
             return {'title': "No matching event found", 'data': []}
 
         # Find matching event
@@ -138,7 +138,7 @@ class Polymarket(callbacks.Plugin):
                 # Use private=True to trigger Limnoria's message splitting
                 irc.reply(output, prefixNick=False)
             else:
-                irc.reply("No matching market found. Please check your query and try again.")
+                irc.reply(result['title'])  # This will now correctly display "No matching event found"
         except requests.RequestException as e:
             irc.reply(f"Error fetching data from Polymarket: {str(e)}")
         except json.JSONDecodeError:
