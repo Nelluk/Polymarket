@@ -47,7 +47,7 @@ class Polymarket(callbacks.Plugin):
         data = response.json()
 
         if not data or 'events' not in data or not data['events']:
-            return {'title': "No matching event found", 'data': []}
+            return {'title': "No matching event found", 'data': [], 'slug': ''}
 
         # Find matching event
         if is_url:
@@ -56,9 +56,10 @@ class Polymarket(callbacks.Plugin):
             matching_event = data['events'][0] if data['events'] else None
 
         if not matching_event:
-            return {'title': "No matching event found", 'data': []}
+            return {'title': "No matching event found", 'data': [], 'slug': ''}
 
         title = matching_event['title']
+        slug = matching_event.get('slug', '')  # Use .get() to avoid KeyError
         markets = matching_event['markets']
 
         # Parse market data
@@ -97,6 +98,7 @@ class Polymarket(callbacks.Plugin):
         
         result = {
             'title': title,
+            'slug': slug,
             'data': [item for item in cleaned_data if item[1] >= 0.01 or len(cleaned_data) == 1][:max_responses]
         }
         
@@ -126,8 +128,11 @@ class Polymarket(callbacks.Plugin):
                     market_url = query
                 else:
                     # Use the correct slug from the API response
-                    slug = result['slug']
-                    market_url = f"https://polymarket.com/event/{slug}"
+                    slug = result.get('slug', '')  # Use .get() to avoid KeyError
+                    if slug:
+                        market_url = f"https://polymarket.com/event/{slug}"
+                    else:
+                        market_url = "https://polymarket.com"  # Fallback URL if no slug is available
                 
                 shortener = pyshorteners.Shortener()
                 short_url = shortener.tinyurl.short(market_url)
