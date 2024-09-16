@@ -131,12 +131,12 @@ class Polymarket(callbacks.Plugin):
                 shortener = pyshorteners.Shortener()
                 short_url = shortener.tinyurl.short(market_url)
                 
-                output += f" | URL: {short_url}"
+                output += f" {short_url}"
                 
                 log.debug(f"Polymarket: Sending IRC reply: {output}")
                 
                 # Use private=True to trigger Limnoria's message splitting
-                irc.reply(output, prefixNick=False, private=True)
+                irc.reply(output, prefixNick=False)
             else:
                 irc.reply("Unable to fetch odds or no valid data found.")
         except Exception as e:
