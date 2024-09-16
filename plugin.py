@@ -131,7 +131,7 @@ class Polymarket(callbacks.Plugin):
                 shortener = pyshorteners.Shortener()
                 short_url = shortener.tinyurl.short(market_url)
                 
-                output += f" {short_url}"
+                output += f" | {short_url}"
                 
                 log.debug(f"Polymarket: Sending IRC reply: {output}")
                 
