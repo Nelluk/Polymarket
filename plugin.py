@@ -125,7 +125,8 @@ class Polymarket(callbacks.Plugin):
                 if is_url:
                     market_url = query
                 else:
-                    slug = '-'.join(result['title'].lower().split())
+                    # Use the correct slug from the API response
+                    slug = result['slug']
                     market_url = f"https://polymarket.com/event/{slug}"
                 
                 shortener = pyshorteners.Shortener()
@@ -138,7 +139,7 @@ class Polymarket(callbacks.Plugin):
                 # Use private=True to trigger Limnoria's message splitting
                 irc.reply(output, prefixNick=False)
             else:
-                irc.reply(result['title'])  # This will now correctly display "No matching event found"
+                irc.reply(result['title'])
         except requests.RequestException as e:
             irc.reply(f"Error fetching data from Polymarket: {str(e)}")
         except json.JSONDecodeError:
