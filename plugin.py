@@ -8,6 +8,7 @@ import requests
 import json
 from urllib.parse import urlparse, quote
 import warnings
+import pyshorteners
 
 # Suppress InsecureRequestWarning
 warnings.filterwarnings('ignore', message='Unverified HTTPS request')
@@ -119,6 +120,18 @@ class Polymarket(callbacks.Plugin):
                 # Format output
                 output = f"\x02{result['title']}\x02: "
                 output += " | ".join([f"{outcome}: \x02{probability:.1%}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02" for outcome, probability, display_outcome in filtered_data])
+                
+                # Generate and shorten the URL
+                if is_url:
+                    market_url = query
+                else:
+                    slug = '-'.join(result['title'].lower().split())
+                    market_url = f"https://polymarket.com/event/{slug}"
+                
+                shortener = pyshorteners.Shortener()
+                short_url = shortener.tinyurl.short(market_url)
+                
+                output += f" | URL: {short_url}"
                 
                 log.debug(f"Polymarket: Sending IRC reply: {output}")
                 
