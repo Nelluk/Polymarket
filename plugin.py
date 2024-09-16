@@ -9,6 +9,7 @@ import json
 from urllib.parse import urlparse, quote
 import warnings
 import pyshorteners
+from requests.exceptions import Timeout, ConnectionError
 
 # Suppress InsecureRequestWarning
 warnings.filterwarnings('ignore', message='Unverified HTTPS request')
@@ -123,25 +124,24 @@ class Polymarket(callbacks.Plugin):
                 output = f"\x02{result['title']}\x02: "
                 output += " | ".join([f"{outcome}: \x02{probability:.1%}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02" for outcome, probability, display_outcome in filtered_data])
                 
-                # Generate and shorten the URL
+                # Generate URL
                 if is_url:
                     market_url = query
                 else:
-                    # Use the correct slug from the API response
-                    slug = result.get('slug', '')  # Use .get() to avoid KeyError
-                    if slug:
-                        market_url = f"https://polymarket.com/event/{slug}"
-                    else:
-                        market_url = "https://polymarket.com"  # Fallback URL if no slug is available
+                    slug = result.get('slug', '')
+                    market_url = f"https://polymarket.com/event/{slug}" if slug else "https://polymarket.com"
                 
-                shortener = pyshorteners.Shortener()
-                short_url = shortener.tinyurl.short(market_url)
-                
-                output += f" | {short_url}"
+                # Try to shorten URL, fall back to full URL if there's an error
+                try:
+                    shortener = pyshorteners.Shortener(timeout=5)  # Increase timeout to 5 seconds
+                    short_url = shortener.tinyurl.short(market_url)
+                    output += f" | {short_url}"
+                except (Timeout, ConnectionError, pyshorteners.exceptions.ShorteningErrorException) as e:
+                    log.warning(f"URL shortening failed: {str(e)}. Using full URL.")
+                    output += f" | {market_url}"
                 
                 log.debug(f"Polymarket: Sending IRC reply: {output}")
                 
-                # Use private=True to trigger Limnoria's message splitting
                 irc.reply(output, prefixNick=False)
             else:
                 irc.reply(result['title'])
