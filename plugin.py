@@ -138,9 +138,14 @@ class Polymarket(callbacks.Plugin):
                 # Use private=True to trigger Limnoria's message splitting
                 irc.reply(output, prefixNick=False)
             else:
-                irc.reply("Unable to fetch odds or no valid data found.")
+                irc.reply("No matching market found. Please check your query and try again.")
+        except requests.RequestException as e:
+            irc.reply(f"Error fetching data from Polymarket: {str(e)}")
+        except json.JSONDecodeError:
+            irc.reply("Error parsing data from Polymarket. The API response may be invalid.")
         except Exception as e:
-            irc.reply(f"An error occurred: {str(e)}")
+            log.error(f"Polymarket plugin error: {str(e)}")
+            irc.reply("An unexpected error occurred. Please try again later.")
 
     polymarket = wrap(polymarket, ['text'])
 
