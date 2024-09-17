@@ -6,7 +6,7 @@ This plugin for Supybot (Limnoria) allows users to fetch and display current odd
 
 - Fetch odds for specific Polymarket events using URLs
 - Search for Polymarket events using keywords
-- Display top outcomes with probabilities
+- Display top outcomes with probabilities and 24-hour price changes
 - Support for both Yes/No markets and markets with custom outcomes
 
 ## Installation
@@ -43,7 +43,7 @@ Where `<query>` can be either a Polymarket URL or a search term.
    ```
    Output:
    ```
-   Balance of Power: 2024 Election: Republicans sweep: 32.0% | D Prez, R Senate, D House: 28.0% | Democrats sweep: 21.0% | R Prez, R Senate, D House: 15.0% | D Prez, R Senate, R House: 5.2%
+   Balance of Power: 2024 Election: Republicans sweep: 32% (🔻1.0%) | D Prez, R Senate, D House: 28% (🔺0.5%) | Democrats sweep: 21% (🔻0.2%) | R Prez, R Senate, D House: 15% (🔺0.3%) | D Prez, R Senate, R House: 5% (🔻0.1%)
    ```
 
 2. Searching for a market using keywords:
@@ -52,7 +52,7 @@ Where `<query>` can be either a Polymarket URL or a search term.
    ```
    Output:
    ```
-   NFL Sunday: Packers vs Bears: 58.5% (Packers) | Cowboys vs Giants: 62.0% (Cowboys) | 49ers vs Rams: 55.0% (49ers)
+   NFL Sunday: Packers vs Bears: 58% (🔺2.0%) (Packers) | Cowboys vs Giants: 62% (🔻1.5%) (Cowboys) | 49ers vs Rams: 55% (🔺0.5%) (49ers)
    ```
 
 ## Notes
@@ -60,6 +60,7 @@ Where `<query>` can be either a Polymarket URL or a search term.
 - The plugin will display up to 7 outcomes for each query, sorted by probability.
 - Only outcomes with at least 1% probability are shown.
 - For markets with custom outcomes (not Yes/No), the outcome name is displayed in parentheses.
+- Each outcome now includes a 24-hour price change, shown as a percentage point difference with an up (🔺) or down (🔻) arrow.
 
 ## Dependencies
 
