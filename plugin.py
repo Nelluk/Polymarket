@@ -70,6 +70,7 @@ class Polymarket(callbacks.Plugin):
             try:
                 outcomes = json.loads(market['outcomes'])
                 outcome_prices = json.loads(market['outcomePrices'])
+                clob_token_ids = json.loads(market['clobTokenIds'])
                 
                 if len(outcomes) == 2 and 'Yes' in outcomes and 'No' in outcomes:
                     yes_index = outcomes.index('Yes')
@@ -79,17 +80,17 @@ class Polymarket(callbacks.Plugin):
                     
                     # Handle the edge case for Yes/No markets only if it's the only market
                     if len(markets) == 1 and yes_probability <= 0.01 and no_probability > 0.99:
-                        cleaned_data.append((outcome, yes_probability, 'Yes'))
+                        cleaned_data.append((outcome, yes_probability, 'Yes', clob_token_ids[yes_index]))
                     else:
                         probability = yes_probability
                         display_outcome = 'Yes'
-                        cleaned_data.append((outcome, probability, display_outcome))
+                        cleaned_data.append((outcome, probability, display_outcome, clob_token_ids[yes_index]))
                 else:
                     # For multi-outcome markets, always use the highest probability
                     max_price_index = outcome_prices.index(max(outcome_prices, key=float))
                     probability = float(outcome_prices[max_price_index])
                     display_outcome = outcomes[max_price_index]
-                    cleaned_data.append((outcome, probability, display_outcome))
+                    cleaned_data.append((outcome, probability, display_outcome, clob_token_ids[max_price_index]))
             except (KeyError, ValueError, json.JSONDecodeError):
                 # If there's any error in parsing, skip this market
                 continue
@@ -107,6 +108,20 @@ class Polymarket(callbacks.Plugin):
         
         return result
 
+    def _get_price_change(self, clob_token_id, current_price):
+        api_url = f"https://clob.polymarket.com/prices-history?interval=1d&market={clob_token_id}&fidelity=1"
+        try:
+            response = requests.get(api_url, verify=False)
+            response.raise_for_status()
+            data = response.json()
+            if data and 'history' in data and len(data['history']) > 0:
+                price_24h_ago = data['history'][0]['p']
+                price_change = current_price - price_24h_ago
+                return price_change
+        except Exception as e:
+            log.error(f"Error fetching price history: {str(e)}")
+        return None
+
     def polymarket(self, irc, msg, args, query):
         """<query>
         
@@ -122,7 +137,12 @@ class Polymarket(callbacks.Plugin):
                 
                 # Format output
                 output = f"\x02{result['title']}\x02: "
-                output += " | ".join([f"{outcome}: \x02{probability:.1%}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02" for outcome, probability, display_outcome in filtered_data])
+                for outcome, probability, display_outcome, clob_token_id in filtered_data:
+                    price_change = self._get_price_change(clob_token_id, probability)
+                    change_str = f" ({'🔺' if price_change > 0 else '🔻'}{abs(price_change)*100:.1f}%)" if price_change is not None else ""
+                    output += f"{outcome}: \x02{probability:.0%}{change_str}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02 | "
+                
+                output = output.rstrip(' | ')
                 
                 # Generate URL
                 if is_url:
