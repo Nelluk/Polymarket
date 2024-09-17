@@ -139,7 +139,7 @@ class Polymarket(callbacks.Plugin):
                 output = f"\x02{result['title']}\x02: "
                 for outcome, probability, display_outcome, clob_token_id in filtered_data:
                     price_change = self._get_price_change(clob_token_id, probability)
-                    change_str = f" ({'🔺' if price_change > 0 else '🔻'}{abs(price_change)*100:.1f}%)" if price_change is not None else ""
+                    change_str = f" ({'⬆️' if price_change > 0 else '🔻'}{abs(price_change)*100:.1f}%)" if price_change is not None and price_change != 0 else ""
                     output += f"{outcome}: \x02{probability:.0%}{change_str}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02 | "
                 
                 output = output.rstrip(' | ')
