@@ -128,7 +128,7 @@ class Polymarket(callbacks.Plugin):
         result = self._parse_polymarket_event(query, is_url=is_url)
         log.debug(f"Top market for '{query}': {result}")
         if result['data']:
-            return result['data'][0]  # Return the top market
+            return result  # Return the entire result including title and data
         return None
 
     def polymarket(self, irc, msg, args, query):
@@ -198,16 +198,14 @@ class Polymarket(callbacks.Plugin):
 
         combined_results = []
         for query in queries:
-            top_market = self._get_top_market(query)
+            result = self._get_top_market(query)  # Get the entire result
             log.debug(f"Processing query: {query}")
-            if top_market:
-                # Extract the title from the result of _parse_polymarket_event
-                market_title = top_market['title'] if isinstance(top_market, dict) else query
-                
-                outcome, probability, display_outcome, clob_token_id = top_market
-                price_change = self._get_price_change(clob_token_id, probability)
-                change_str = f" ({'⬆️' if price_change > 0 else '🔻'}{abs(price_change)*100:.1f}%)" if price_change is not None and price_change != 0 else ""
-                combined_results.append(f"{market_title}: {outcome}: \x02{probability:.0%}{change_str}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02")
+            if result:
+                market_title = result['title']  # Get the title from the result
+                for outcome, probability, display_outcome, clob_token_id in result['data']:
+                    price_change = self._get_price_change(clob_token_id, probability)
+                    change_str = f" ({'⬆️' if price_change > 0 else '🔻'}{abs(price_change)*100:.1f}%)" if price_change is not None and price_change != 0 else ""
+                    combined_results.append(f"{market_title}: {outcome}: \x02{probability:.0%}{change_str}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02")
             else:
                 combined_results.append(f"No matching market found for '{query}'.")
 
