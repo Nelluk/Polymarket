@@ -122,6 +122,14 @@ class Polymarket(callbacks.Plugin):
             log.error(f"Error fetching price history: {str(e)}")
         return None
 
+    def _get_top_market(self, query):
+        """Helper method to get the top market for a single query."""
+        is_url = query.startswith('http://') or query.startswith('https://')
+        result = self._parse_polymarket_event(query, is_url=is_url)
+        if result['data']:
+            return result['data'][0]  # Return the top market
+        return None
+
     def polymarket(self, irc, msg, args, query):
         """<query>
         
@@ -174,6 +182,28 @@ class Polymarket(callbacks.Plugin):
             irc.reply("An unexpected error occurred. Please try again later.")
 
     polymarket = wrap(polymarket, ['text'])
+
+    def polymarkets(self, irc, msg, args, *queries):
+        """<query1> <query2> ...
+        
+        Fetches and displays the current odds from Polymarket for multiple queries.
+        """
+        combined_results = []
+        for query in queries:
+            top_market = self._get_top_market(query)
+            if top_market:
+                outcome, probability, display_outcome, clob_token_id = top_market
+                price_change = self._get_price_change(clob_token_id, probability)
+                change_str = f" ({'⬆️' if price_change > 0 else '🔻'}{abs(price_change)*100:.1f}%)" if price_change is not None and price_change != 0 else ""
+                combined_results.append(f"{outcome}: \x02{probability:.0%}{change_str}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02")
+
+        if combined_results:
+            output = " | ".join(combined_results)
+            irc.reply(output, prefixNick=False)
+        else:
+            irc.reply("No matching markets found for the provided queries.")
+
+    polymarkets = wrap(polymarkets, ['text'])
 
 Class = Polymarket
 
