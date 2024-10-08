@@ -185,10 +185,10 @@ class Polymarket(callbacks.Plugin):
     polymarket = wrap(polymarket, ['text'])
 
     def polymarkets(self, irc, msg, args, text):
-        """<slug1> <slug2> ...
+        """<market-name-one> <market-name-two> ...
         
         Fetches and displays the current odds from Polymarket for multiple queries.
-        Each query should be in slug format.
+        Each market name should have words separated by hyphens.
         """
         # Remove shlex and split by spaces
         log.debug("msg", msg, "text", text)
