@@ -189,8 +189,13 @@ class Polymarket(callbacks.Plugin):
         
         Fetches and displays the current odds from Polymarket for multiple queries.
         """
+        # Join the queries into a single string and split by quotes
+        combined_query = ' '.join(queries)
+        split_queries = [q.strip('"') for q in combined_query.split('"') if q.strip()]
+        log.debug(f"Split queries: {split_queries}")
+
         combined_results = []
-        for query in queries:
+        for query in split_queries:
             top_market = self._get_top_market(query)
             log.debug(f"Processing query: {query}")
             if top_market:
