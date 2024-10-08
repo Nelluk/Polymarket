@@ -122,15 +122,6 @@ class Polymarket(callbacks.Plugin):
             log.error(f"Error fetching price history: {str(e)}")
         return None
 
-    def _get_top_market(self, query):
-        """Helper method to get the top market for a single query."""
-        is_url = query.startswith('http://') or query.startswith('https://')
-        result = self._parse_polymarket_event(query, is_url=is_url)
-        log.debug(f"Top market for '{query}': {result}")
-        if result['data']:
-            return result  # Return the entire result including title and data
-        return None
-
     def polymarket(self, irc, msg, args, query):
         """<query>
         
@@ -198,16 +189,16 @@ class Polymarket(callbacks.Plugin):
 
         combined_results = []
         for query in queries:
-            result = self._get_top_market(query)  # Get the entire result
+            is_url = query.startswith('http://') or query.startswith('https://')
+            result = self._parse_polymarket_event(query, is_url=is_url)  # Directly call _parse_polymarket_event
             log.debug(f"Processing query: {query}")
-            if result:
+            if result['data']:
                 market_title = result['title']  # Get the title from the result
                 # Only take the top outcome
-                if result['data']:
-                    outcome, probability, display_outcome, clob_token_id = result['data'][0]  # Get the first outcome
-                    price_change = self._get_price_change(clob_token_id, probability)
-                    change_str = f" ({'⬆️' if price_change > 0 else '🔻'}{abs(price_change)*100:.1f}%)" if price_change is not None and price_change != 0 else ""
-                    combined_results.append(f"{market_title}: {outcome}: \x02{probability:.0%}{change_str}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02")
+                outcome, probability, display_outcome, clob_token_id = result['data'][0]  # Get the first outcome
+                price_change = self._get_price_change(clob_token_id, probability)
+                change_str = f" ({'⬆️' if price_change > 0 else '🔻'}{abs(price_change)*100:.1f}%)" if price_change is not None and price_change != 0 else ""
+                combined_results.append(f"{market_title}: {outcome}: \x02{probability:.0%}{change_str}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02")
             else:
                 combined_results.append(f"No matching market found for '{query}'.")
 
