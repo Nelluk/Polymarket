@@ -191,9 +191,10 @@ class Polymarket(callbacks.Plugin):
         Each query should be enclosed in double quotes.
         """
         import shlex
-
+        log.debug(args)
+        log.debug(text)
         try:
-            # If quotes are mismatched, raise an error early
+            # Parse the input string, respecting the quotes
             queries = shlex.split(text)
         except ValueError as e:
             irc.error(f"Error parsing arguments: {str(e)}")
@@ -201,7 +202,6 @@ class Polymarket(callbacks.Plugin):
 
         log.debug(f"Split queries: {queries}")
 
-        # Iterate over the parsed queries and fetch the top markets
         combined_results = []
         for query in queries:
             top_market = self._get_top_market(query)
@@ -221,7 +221,7 @@ class Polymarket(callbacks.Plugin):
             irc.reply("No matching markets found for the provided queries.")
 
 
-    polymarkets = wrap(polymarkets, ['anything'])
+    polymarkets = wrap(polymarkets, [rest('text')])
 
 Class = Polymarket
 
