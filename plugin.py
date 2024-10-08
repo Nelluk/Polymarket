@@ -47,6 +47,8 @@ class Polymarket(callbacks.Plugin):
         response.raise_for_status()
         data = response.json()
 
+        log.debug(f"Polymarket: API response data: {data}")  # Log the raw API response
+
         if not data or 'events' not in data or not data['events']:
             return {'title': "No matching event found", 'data': [], 'slug': ''}
 
@@ -63,15 +65,20 @@ class Polymarket(callbacks.Plugin):
         slug = matching_event.get('slug', '')  # Use .get() to avoid KeyError
         markets = matching_event['markets']
 
+        log.debug(f"Polymarket: Matching event found: {title}, slug: {slug}, markets: {markets}")  # Log matching event details
+
         # Parse market data
         cleaned_data = []
         for market in markets:
             outcome = market['groupItemTitle']
+            log.debug(f"Polymarket: Parsing market: {outcome}")  # Log the current market being parsed
             try:
                 outcomes = json.loads(market['outcomes'])
                 outcome_prices = json.loads(market['outcomePrices'])
                 clob_token_ids = json.loads(market['clobTokenIds'])
                 
+                log.debug(f"Polymarket: Outcomes: {outcomes}, Prices: {outcome_prices}, Token IDs: {clob_token_ids}")  # Log parsed data
+
                 if len(outcomes) == 2 and 'Yes' in outcomes and 'No' in outcomes:
                     yes_index = outcomes.index('Yes')
                     no_index = outcomes.index('No')
@@ -91,8 +98,8 @@ class Polymarket(callbacks.Plugin):
                     probability = float(outcome_prices[max_price_index])
                     display_outcome = outcomes[max_price_index]
                     cleaned_data.append((outcome, probability, display_outcome, clob_token_ids[max_price_index]))
-            except (KeyError, ValueError, json.JSONDecodeError):
-                # If there's any error in parsing, skip this market
+            except (KeyError, ValueError, json.JSONDecodeError) as e:
+                log.error(f"Polymarket: Error parsing market data: {str(e)}")  # Log parsing errors
                 continue
 
         # Sort outcomes by probability and limit to max_responses
