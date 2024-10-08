@@ -201,7 +201,7 @@ class Polymarket(callbacks.Plugin):
             log.debug(f"Processing query: {query}")
             if result['data']:
                 market_title = result['title']  # Get the title from the result
-                # Only take the top outcome
+                # Only take the top outcome 
                 outcome, probability, display_outcome, clob_token_id = result['data'][0]  # Get the first outcome
                 price_change = self._get_price_change(clob_token_id, probability)
                 change_str = f" ({'⬆️' if price_change > 0 else '🔻'}{abs(price_change)*100:.1f}%)" if price_change is not None and price_change != 0 else ""
