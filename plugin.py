@@ -213,6 +213,13 @@ class Polymarket(callbacks.Plugin):
 
                 # Only take the top outcome
                 outcome, probability, display_outcome, clob_token_id = result['data'][0]  # Get the first outcome
+                
+                # Special case for "Republican" and "Democrat"
+                if outcome == "Republican":
+                    outcome = "\x0304Rep\x03"  # Color Red
+                elif outcome == "Democrat":
+                    outcome = "\x0302Dem\x03"  # Color Blue
+                
                 price_change = self._get_price_change(clob_token_id, probability)
                 change_str = f" ({'⬆️' if price_change > 0 else '🔻'}{abs(price_change)*100:.1f}%)" if price_change is not None and price_change != 0 else ""
                 combined_results.append(f"{filtered_title}: {outcome}: \x02{probability:.0%}{change_str}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02")
