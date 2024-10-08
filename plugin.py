@@ -70,7 +70,8 @@ class Polymarket(callbacks.Plugin):
         # Parse market data
         cleaned_data = []
         for market in markets:
-            log.debug(f"Polymarket: Parsing market: {market}")  # Log the entire market being parsed
+            outcome = market['groupItemTitle']
+            log.debug(f"Polymarket: Parsing market: {outcome}")  # Log the current market being parsed
             try:
                 outcomes = json.loads(market['outcomes'])
                 outcome_prices = json.loads(market['outcomePrices'])
@@ -78,7 +79,6 @@ class Polymarket(callbacks.Plugin):
                 
                 log.debug(f"Polymarket: Outcomes: {outcomes}, Prices: {outcome_prices}, Token IDs: {clob_token_ids}")  # Log parsed data
 
-                # Special handling for Yes/No markets
                 if len(outcomes) == 2 and 'Yes' in outcomes and 'No' in outcomes:
                     yes_index = outcomes.index('Yes')
                     no_index = outcomes.index('No')
@@ -87,17 +87,17 @@ class Polymarket(callbacks.Plugin):
                     
                     # Handle the edge case for Yes/No markets only if it's the only market
                     if len(markets) == 1 and yes_probability <= 0.01 and no_probability > 0.99:
-                        cleaned_data.append(('Yes', yes_probability, 'Yes', clob_token_ids[yes_index]))
+                        cleaned_data.append((outcome, yes_probability, 'Yes', clob_token_ids[yes_index]))
                     else:
-                        cleaned_data.append(('Yes', yes_probability, 'Yes', clob_token_ids[yes_index]))
-                        cleaned_data.append(('No', no_probability, 'No', clob_token_ids[no_index]))
+                        probability = yes_probability
+                        display_outcome = 'Yes'
+                        cleaned_data.append((outcome, probability, display_outcome, clob_token_ids[yes_index]))
                 else:
                     # For multi-outcome markets, always use the highest probability
-                    for i in range(len(outcomes)):
-                        outcome = outcomes[i]
-                        probability = float(outcome_prices[i])
-                        cleaned_data.append((outcome, probability, outcome, clob_token_ids[i]))
-
+                    max_price_index = outcome_prices.index(max(outcome_prices, key=float))
+                    probability = float(outcome_prices[max_price_index])
+                    display_outcome = outcomes[max_price_index]
+                    cleaned_data.append((outcome, probability, display_outcome, clob_token_ids[max_price_index]))
             except (KeyError, ValueError, json.JSONDecodeError) as e:
                 log.error(f"Polymarket: Error parsing market data: {str(e)}")  # Log parsing errors
                 continue
@@ -201,7 +201,7 @@ class Polymarket(callbacks.Plugin):
             log.debug(f"Processing query: {query}")
             if result['data']:
                 market_title = result['title']  # Get the title from the result
-                # Only take the top outcome 
+                # Only take the top outcome
                 outcome, probability, display_outcome, clob_token_id = result['data'][0]  # Get the first outcome
                 price_change = self._get_price_change(clob_token_id, probability)
                 change_str = f" ({'⬆️' if price_change > 0 else '🔻'}{abs(price_change)*100:.1f}%)" if price_change is not None and price_change != 0 else ""
