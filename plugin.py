@@ -186,14 +186,14 @@ class Polymarket(callbacks.Plugin):
 
     def polymarkets(self, irc, msg, args, text):
         """<"query1"> <"query2"> ...
-        
+
         Fetches and displays the current odds from Polymarket for multiple queries.
         Each query should be enclosed in double quotes.
         """
-        # Use shlex to properly split the arguments, preserving quoted strings
         import shlex
-        
+
         try:
+            # If quotes are mismatched, raise an error early
             queries = shlex.split(text)
         except ValueError as e:
             irc.error(f"Error parsing arguments: {str(e)}")
@@ -201,6 +201,7 @@ class Polymarket(callbacks.Plugin):
 
         log.debug(f"Split queries: {queries}")
 
+        # Iterate over the parsed queries and fetch the top markets
         combined_results = []
         for query in queries:
             top_market = self._get_top_market(query)
@@ -209,8 +210,7 @@ class Polymarket(callbacks.Plugin):
                 outcome, probability, display_outcome, clob_token_id = top_market
                 price_change = self._get_price_change(clob_token_id, probability)
                 change_str = f" ({'⬆️' if price_change > 0 else '🔻'}{abs(price_change)*100:.1f}%)" if price_change is not None and price_change != 0 else ""
-                market_title = top_market['title'] if isinstance(top_market, dict) else "Unknown Market"
-                combined_results.append(f"{market_title}: {outcome}: \x02{probability:.0%}{change_str}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02")
+                combined_results.append(f"{query}: {outcome}: \x02{probability:.0%}{change_str}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02")
             else:
                 combined_results.append(f"No matching market found for '{query}'.")
 
@@ -219,6 +219,7 @@ class Polymarket(callbacks.Plugin):
             irc.reply(output, prefixNick=False)
         else:
             irc.reply("No matching markets found for the provided queries.")
+
 
     polymarkets = wrap(polymarkets, ['text'])
 
