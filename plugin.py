@@ -204,7 +204,7 @@ class Polymarket(callbacks.Plugin):
                 outcome, probability, display_outcome, clob_token_id = top_market
                 price_change = self._get_price_change(clob_token_id, probability)
                 change_str = f" ({'⬆️' if price_change > 0 else '🔻'}{abs(price_change)*100:.1f}%)" if price_change is not None and price_change != 0 else ""
-                market_title = top_market['title'] if isinstance(top_market, dict) else "Unknown Market"
+                market_title = top_market['title'] if isinstance(top_market, dict) else query  # Use the title from top_market
                 combined_results.append(f"{market_title}: {outcome}: \x02{probability:.0%}{change_str}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02")
             else:
                 combined_results.append(f"No matching market found for '{query}'.")
