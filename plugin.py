@@ -184,18 +184,25 @@ class Polymarket(callbacks.Plugin):
 
     polymarket = wrap(polymarket, ['text'])
 
-    def polymarkets(self, irc, msg, args, *queries):
-        """<query1> <query2> ...
+    def polymarkets(self, irc, msg, args, text):
+        """<"query1"> <"query2"> ...
         
         Fetches and displays the current odds from Polymarket for multiple queries.
+        Each query should be enclosed in double quotes.
         """
-        # Join the queries into a single string and split by quotes
-        combined_query = ' '.join(queries)
-        split_queries = [q.strip('"') for q in combined_query.split('"') if q.strip()]
-        log.debug(f"Split queries: {split_queries}")
+        # Use shlex to properly split the arguments, preserving quoted strings
+        import shlex
+        
+        try:
+            queries = shlex.split(text)
+        except ValueError as e:
+            irc.error(f"Error parsing arguments: {str(e)}")
+            return
+
+        log.debug(f"Split queries: {queries}")
 
         combined_results = []
-        for query in split_queries:
+        for query in queries:
             top_market = self._get_top_market(query)
             log.debug(f"Processing query: {query}")
             if top_market:
