@@ -185,19 +185,14 @@ class Polymarket(callbacks.Plugin):
     polymarket = wrap(polymarket, ['text'])
 
     def polymarkets(self, irc, msg, args, text):
-        """<"query1"> <"query2"> ...
+        """<slug1> <slug2> ...
         
         Fetches and displays the current odds from Polymarket for multiple queries.
-        Each query should be enclosed in double quotes.
+        Each query should be in slug format.
         """
-        # Use shlex to properly split the arguments, preserving quoted strings
-        import shlex
+        # Remove shlex and split by spaces
         log.debug("msg", msg, "text", text)
-        try:
-            queries = shlex.split(text)
-        except ValueError as e:
-            irc.error(f"Error parsing arguments: {str(e)}")
-            return
+        queries = text.split()  # Split by spaces instead of using shlex
 
         log.debug(f"Split queries: {queries}")
 
