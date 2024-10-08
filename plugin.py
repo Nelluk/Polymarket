@@ -126,6 +126,7 @@ class Polymarket(callbacks.Plugin):
         """Helper method to get the top market for a single query."""
         is_url = query.startswith('http://') or query.startswith('https://')
         result = self._parse_polymarket_event(query, is_url=is_url)
+        log.debug(f"Top market for '{query}': {result}")
         if result['data']:
             return result['data'][0]  # Return the top market
         return None
@@ -191,11 +192,14 @@ class Polymarket(callbacks.Plugin):
         combined_results = []
         for query in queries:
             top_market = self._get_top_market(query)
+            
             if top_market:
                 outcome, probability, display_outcome, clob_token_id = top_market
                 price_change = self._get_price_change(clob_token_id, probability)
                 change_str = f" ({'⬆️' if price_change > 0 else '🔻'}{abs(price_change)*100:.1f}%)" if price_change is not None and price_change != 0 else ""
                 combined_results.append(f"{outcome}: \x02{probability:.0%}{change_str}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02")
+            else:
+                combined_results.append(f"No matching market found for '{query}'.")
 
         if combined_results:
             output = " | ".join(combined_results)
