@@ -197,7 +197,7 @@ class Polymarket(callbacks.Plugin):
         combined_results = []
         for query in queries:
             is_url = query.startswith('http://') or query.startswith('https://')
-            query = query.replace('-', ' ') if is_url else query
+            query = query.replace('-', ' ') if not is_url else query
             result = self._parse_polymarket_event(query, is_url=is_url)
             log.debug(f"Processing query: {query}")
             if result['data']:
