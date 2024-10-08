@@ -205,6 +205,7 @@ class Polymarket(callbacks.Plugin):
                 market_title = result['title']  # Get the title from the result
                 
                 # Split title into words and filter out seen words
+                # to handle multiple markets with the nearly-identical names
                 title_words = market_title.split()
                 filtered_title = ' '.join(word for word in title_words if word.lower() not in seen_words)
                 
