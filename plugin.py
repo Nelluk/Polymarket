@@ -192,7 +192,7 @@ class Polymarket(callbacks.Plugin):
         """
         # Use shlex to properly split the arguments, preserving quoted strings
         import shlex
-        
+        log.debug("msg", msg, "text", text)
         try:
             queries = shlex.split(text)
         except ValueError as e:
