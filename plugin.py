@@ -182,65 +182,41 @@ class Polymarket(callbacks.Plugin):
 
     polymarket = wrap(polymarket, ['text'])
 
-
     def polymarkets(self, irc, msg, args, text):
         """<market-name-one> <market-name-two> ...
         
         Fetches and displays the current odds from Polymarket for multiple queries.
         Each market name should have words separated by hyphens.
         """
-        queries = text.split()
-        log.debug(f"Split queries: {queries}")
-        from collections import defaultdict
+        # Remove shlex and split by spaces
+        log.debug("msg", msg, "text", text)
+        queries = text.split()  # Split by spaces instead of using shlex
 
-        results = []
-        common_words = set()
-        
+        log.debug(f"Split queries: {queries}")
+
+        combined_results = []
         for query in queries:
             is_url = query.startswith('http://') or query.startswith('https://')
             query = query.replace('-', ' ') if not is_url else query
             result = self._parse_polymarket_event(query, is_url=is_url)
             log.debug(f"Processing query: {query}")
-            
             if result['data']:
-                market_title = result['title']
-                outcome, probability, display_outcome, clob_token_id = result['data'][0]
+                market_title = result['title']  # Get the title from the result
+                # Only take the top outcome
+                outcome, probability, display_outcome, clob_token_id = result['data'][0]  # Get the first outcome
                 price_change = self._get_price_change(clob_token_id, probability)
-                results.append((market_title, outcome, probability, price_change, display_outcome))
-                
-                # Update common words
-                if not common_words:
-                    common_words = set(market_title.split())
-                else:
-                    common_words.intersection_update(market_title.split())
+                change_str = f" ({'⬆️' if price_change > 0 else '🔻'}{abs(price_change)*100:.1f}%)" if price_change is not None and price_change != 0 else ""
+                combined_results.append(f"{market_title}: {outcome}: \x02{probability:.0%}{change_str}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02")
             else:
-                results.append((f"No matching market found for '{query}'.", None, None, None, None))
+                combined_results.append(f"No matching market found for '{query}'.")
 
-        output = []
-        for i, (market_title, outcome, probability, price_change, display_outcome) in enumerate(results):
-            if outcome is None:
-                output.append(market_title)
-                continue
-            
-            # Remove common words from title after first usage
-            if i == 0:
-                title = market_title
-            else:
-                title = ' '.join(word for word in market_title.split() if word not in common_words)
-            
-            change_str = f" ({'⬆️' if price_change > 0 else '🔻'}{abs(price_change)*100:.1f}%)" if price_change is not None and abs(price_change) >= 0.01 else ""
-            outcome_str = f"{outcome}: \x02{probability:.0%}{change_str}\x02"
-            if display_outcome and display_outcome != 'Yes':
-                outcome_str += f" ({display_outcome})"
-            
-            output.append(f"{title}: {outcome_str}")
-
-        if output:
-            irc.reply(" | ".join(output), prefixNick=False)
+        if combined_results:
+            output = " | ".join(combined_results)
+            irc.reply(output, prefixNick=False)
         else:
             irc.reply("No matching markets found for the provided queries.")
 
-polymarkets = wrap(polymarkets, ['text'])
+    polymarkets = wrap(polymarkets, ['text'])
 
 Class = Polymarket
 
