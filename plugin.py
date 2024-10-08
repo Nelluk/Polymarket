@@ -188,13 +188,14 @@ class Polymarket(callbacks.Plugin):
         Fetches and displays the current odds from Polymarket for multiple queries.
         Each market name should have words separated by hyphens.
         """
-        # Remove shlex and split by spaces
+
         log.debug("msg", msg, "text", text)
         queries = text.split()  # Split by spaces instead of using shlex
 
         log.debug(f"Split queries: {queries}")
 
         combined_results = []
+        seen_words = set()  # Track words from previous market titles
         for query in queries:
             is_url = query.startswith('http://') or query.startswith('https://')
             query = query.replace('-', ' ') if not is_url else query
@@ -202,11 +203,19 @@ class Polymarket(callbacks.Plugin):
             log.debug(f"Processing query: {query}")
             if result['data']:
                 market_title = result['title']  # Get the title from the result
+                
+                # Split title into words and filter out seen words
+                title_words = market_title.split()
+                filtered_title = ' '.join(word for word in title_words if word.lower() not in seen_words)
+                
+                # Update seen words with the current title words
+                seen_words.update(word.lower() for word in title_words)
+
                 # Only take the top outcome
                 outcome, probability, display_outcome, clob_token_id = result['data'][0]  # Get the first outcome
                 price_change = self._get_price_change(clob_token_id, probability)
                 change_str = f" ({'⬆️' if price_change > 0 else '🔻'}{abs(price_change)*100:.1f}%)" if price_change is not None and price_change != 0 else ""
-                combined_results.append(f"{market_title}: {outcome}: \x02{probability:.0%}{change_str}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02")
+                combined_results.append(f"{filtered_title}: {outcome}: \x02{probability:.0%}{change_str}{' (' + display_outcome + ')' if display_outcome != 'Yes' else ''}\x02")
             else:
                 combined_results.append(f"No matching market found for '{query}'.")
 
