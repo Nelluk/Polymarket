@@ -221,7 +221,7 @@ class Polymarket(callbacks.Plugin):
             irc.reply("No matching markets found for the provided queries.")
 
 
-    polymarkets = wrap(polymarkets, [rest('text')])
+    polymarkets = wrap(polymarkets, ['anything'])
 
 Class = Polymarket
 
