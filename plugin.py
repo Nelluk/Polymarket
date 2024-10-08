@@ -218,7 +218,7 @@ class Polymarket(callbacks.Plugin):
                 if outcome == "Republican":
                     outcome = "\x0304Rep\x03"  # Color Red
                 elif outcome == "Democrat":
-                    outcome = "\x0302Dem\x03"  # Color Blue
+                    outcome = "\x0312Dem\x03"  # Color Blue
                 
                 price_change = self._get_price_change(clob_token_id, probability)
                 change_str = f" ({'⬆️' if price_change > 0 else '🔻'}{abs(price_change)*100:.1f}%)" if price_change is not None and price_change != 0 else ""
