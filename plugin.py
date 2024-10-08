@@ -116,6 +116,7 @@ class Polymarket(callbacks.Plugin):
         return result
 
     def _get_price_change(self, clob_token_id, current_price):
+        """Fetches and calculates the 24-hour price change for a given clob_token_id."""
         api_url = f"https://clob.polymarket.com/prices-history?interval=1d&market={clob_token_id}&fidelity=1"
         try:
             response = requests.get(api_url, verify=False)
@@ -123,13 +124,58 @@ class Polymarket(callbacks.Plugin):
             data = response.json()
             if data and 'history' in data and len(data['history']) > 0:
                 price_24h_ago = data['history'][0]['p']
-                price_change = current_price - price_24h_ago
-                return price_change
+                return current_price - price_24h_ago
         except Exception as e:
             log.error(f"Error fetching price history: {str(e)}")
         return None
 
-    def polymarket(self, irc, msg, args, query):
+    def _find_matching_event(self, events: list, slug: str, is_url: bool) -> dict:
+        """Finds the matching event from a list of events."""
+        if is_url:
+            return next((event for event in events if event['slug'] == slug.replace(' ', '-')), None)
+        else:
+            return events[0] if events else None
+
+    def _parse_market_data(self, market: dict) -> list:
+        """Parses data for a single market within an event."""
+        outcome = market['groupItemTitle']
+        log.debug(f"Polymarket: Parsing market: {outcome}")
+        try:
+            outcomes = json.loads(market['outcomes'])
+            outcome_prices = json.loads(market['outcomePrices'])
+            clob_token_ids = json.loads(market['clobTokenIds'])
+
+            log.debug(f"Polymarket: Outcomes: {outcomes}, Prices: {outcome_prices}, Token IDs: {clob_token_ids}")
+
+            if len(outcomes) == 2 and 'Yes' in outcomes and 'No' in outcomes:
+                return self._parse_yes_no_market(outcomes, outcome_prices, clob_token_ids)
+            else:
+                return self._parse_multi_outcome_market(outcomes, outcome_prices, clob_token_ids)
+        except (KeyError, ValueError, json.JSONDecodeError) as e:
+            log.error(f"Polymarket: Error parsing market  {str(e)}")
+            return []
+
+    def _parse_yes_no_market(self, outcomes: list, outcome_prices: list, clob_token_ids: list) -> list:
+        """Parses data for a Yes/No market."""
+        yes_index = outcomes.index('Yes')
+        no_index = outcomes.index('No')
+        yes_probability = float(outcome_prices[yes_index])
+        no_probability = float(outcome_prices[no_index])
+
+        # Handle edge case for Yes/No markets where 'Yes' probability is extremely low
+        if yes_probability <= 0.01 and no_probability > 0.99:
+            return [(outcomes[yes_index], yes_probability, 'Yes', clob_token_ids[yes_index])]
+        else:
+            return [(outcomes[yes_index], yes_probability, 'Yes', clob_token_ids[yes_index])]
+
+    def _parse_multi_outcome_market(self, outcomes: list, outcome_prices: list, clob_token_ids: list) -> list:
+        """Parses data for a multi-outcome market."""
+        max_price_index = outcome_prices.index(max(outcome_prices, key=float))
+        probability = float(outcome_prices[max_price_index])
+        display_outcome = outcomes[max_price_index]
+        return [(outcomes[max_price_index], probability, display_outcome, clob_token_ids[max_price_index])]
+
+    def polymarket(self, irc, msg, args, query: str):
         """<query>
         
         Fetches and displays the current odds from Polymarket. 
